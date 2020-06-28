@@ -2,11 +2,37 @@ use serde_derive::Deserialize;
 use std::fs::File;
 use std::io::Read;
 use std::thread;
-use std::thread::{JoinHandle, Builder};
+use std::thread::{JoinHandle};
 use std::sync::{Arc, mpsc, Mutex};
-use std::borrow::Borrow;
 
-struct Work{
+pub struct Threadpool{
+    workers:Vec<Worker>,
+    sender:mpsc::Sender<Job>,
+}
+
+impl Threadpool{
+    pub fn new(size:usize) -> Threadpool{
+        let (sender,receiver) = mpsc::channel();
+        let mut workers = Vec::with_capacity(size);
+
+        let receiver = Arc::new(Mutex::new(receiver));
+
+        for id in 0..size{
+            workers.push(Worker::new(id, Arc::clone(&receiver)));
+        }
+
+        Threadpool{
+            workers,
+            sender,
+        }
+    }
+
+    pub fn sendTask(&self, j: Job){
+        self.sender.send(j).unwrap();
+    }
+}
+
+pub struct Work{
     id:usize,
 }
 
@@ -16,6 +42,14 @@ pub trait Process{
 
 type Job = Box<dyn Process + Send + 'static>;
 
+impl Work{
+    pub fn new(id:usize) -> Work{
+        Work{
+            id,
+        }
+    }
+}
+
 impl Process for Work{
     fn exec(&self){
         println!("---->{}", self.id);
@@ -24,7 +58,7 @@ impl Process for Work{
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
-    max_num: u64,   //最大线程数
+    pub max_num: u64,   //最大线程数
     min_num: u64,   //最小线程数
     idle_num: u64,  //空闲线程数
     idle_time: u64, //空闲时长(秒)
