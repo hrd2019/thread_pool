@@ -1,6 +1,26 @@
 use serde_derive::Deserialize;
 use std::fs::File;
 use std::io::Read;
+use std::thread;
+use std::thread::{JoinHandle, Builder};
+use std::sync::{Arc, mpsc, Mutex};
+use std::borrow::Borrow;
+
+struct Work{
+    id:usize,
+}
+
+pub trait Process{
+    fn exec(&self);
+}
+
+type Job = Box<dyn Process + Send + 'static>;
+
+impl Process for Work{
+    fn exec(&self){
+        println!("---->{}", self.id);
+    }
+}
 
 #[derive(Deserialize, Debug)]
 pub struct Config {
@@ -25,4 +45,33 @@ pub fn parse_config() -> Config {
 
     let config: Config = toml::from_str(&str_buffer).unwrap();
     config
+}
+
+pub struct Worker{
+    id:usize,
+    thread:thread::JoinHandle<()>
+}
+
+impl Worker{
+    pub fn new(id:usize, rec:Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker{
+        let thread = thread::spawn(move|| {
+            while let Ok(job) = rec.lock().unwrap().recv(){
+                println!("thread[{}] got a job",id);
+                job.exec();
+            }
+        });
+
+        Worker{
+            id,
+            thread,
+        }
+    }
+}
+
+pub unsafe fn build_thread<F,T>(f:F) -> JoinHandle<T>
+    where
+        F: FnOnce() -> T,
+        F: Send + 'static,
+        T: Send + 'static,{
+    thread::spawn(f)
 }
