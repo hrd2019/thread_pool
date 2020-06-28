@@ -1,0 +1,4 @@
+max_num = 100
+min_num = 20
+idle_num = 10
+idle_time = 100
