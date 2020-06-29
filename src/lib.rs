@@ -2,7 +2,6 @@ use serde_derive::Deserialize;
 use std::fs::File;
 use std::io::Read;
 use std::thread;
-use std::thread::{JoinHandle};
 use std::sync::{Arc, mpsc, Mutex};
 
 pub struct Threadpool{
@@ -19,6 +18,7 @@ impl Threadpool{
 
         for id in 0..size{
             workers.push(Worker::new(id, Arc::clone(&receiver)));
+
         }
 
         Threadpool{
@@ -27,8 +27,18 @@ impl Threadpool{
         }
     }
 
-    pub fn sendTask(&self, j: Job){
+    pub fn send_task(&self, j: Job){
         self.sender.send(j).unwrap();
+    }
+
+    pub fn run(&mut self){
+        for worker in &mut self.workers {
+            println!("Shutting down worker {}", worker.id);
+
+            if let Some(thread) = worker.thread.take() {
+                thread.join().unwrap();
+            }
+        }
     }
 }
 
@@ -83,7 +93,7 @@ pub fn parse_config() -> Config {
 
 pub struct Worker{
     id:usize,
-    thread:thread::JoinHandle<()>
+    thread:Option<thread::JoinHandle<()>>
 }
 
 impl Worker{
@@ -97,7 +107,7 @@ impl Worker{
 
         Worker{
             id,
-            thread,
+            thread:Some(thread),
         }
     }
 }

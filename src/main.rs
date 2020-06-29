@@ -10,7 +10,17 @@ fn main() {
 
     let tp = Threadpool::new(config.max_num as usize);
 
-    let job = Box::new(Work::new(56));
+    thread::spawn(move || {
+        for id in 1..4{
+            let job = Box::new(Work::new(id));
+            tp.send_task(job);
 
-    tp.sendTask(job);
+            thread::sleep(Duration::from_secs(3));
+        }
+    });
+
+    loop{
+        println!("----");
+        thread::sleep(Duration::from_secs(5));
+    }
 }
