@@ -40,7 +40,7 @@ pub trait Process{
     fn exec(&self);
 }
 
-type Job = Box<dyn Process + Send>;
+type Job = Box<dyn Process + Send + 'static>;
 
 impl Work{
     pub fn new(id:usize) -> Work{

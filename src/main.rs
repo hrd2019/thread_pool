@@ -1,4 +1,4 @@
-use thread_pool::{parse_config, build_thread, Threadpool, Work};
+use thread_pool::{parse_config, Threadpool, Work};
 use std::thread;
 use std::time::Duration;
 
