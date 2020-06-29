@@ -11,11 +11,11 @@ fn main() {
     let tp = Threadpool::new(config.max_num as usize);
 
     thread::spawn(move || {
-        for id in 1..4{
+        for id in 1..400{
             let job = Box::new(Work::new(id));
             tp.send_task(job);
 
-            thread::sleep(Duration::from_secs(3));
+            // thread::sleep(Duration::from_secs(1));
         }
     });
 

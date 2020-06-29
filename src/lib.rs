@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::Read;
 use std::thread;
 use std::sync::{Arc, mpsc, Mutex};
+use std::time::Duration;
 
 pub struct Threadpool{
     workers:Vec<Worker>,
@@ -30,8 +31,10 @@ impl Threadpool{
     pub fn send_task(&self, j: Job){
         self.sender.send(j).unwrap();
     }
+}
 
-    pub fn run(&mut self){
+impl Drop for Threadpool {
+    fn drop(&mut self) {
         for worker in &mut self.workers {
             println!("Shutting down worker {}", worker.id);
 
@@ -99,9 +102,13 @@ pub struct Worker{
 impl Worker{
     pub fn new(id:usize, rec:Arc<Mutex<mpsc::Receiver<Job>>>) -> Worker{
         let thread = thread::spawn(move|| {
-            while let Ok(job) = rec.lock().unwrap().recv(){
-                println!("thread[{}] got a job",id);
-                job.exec();
+            loop {
+                if let Ok(job) = rec.lock().unwrap().recv() {
+                    println!("thread[{}] got a job", id);
+                    job.exec();
+                }
+
+                thread::sleep(Duration::from_micros(200));
             }
         });
 
