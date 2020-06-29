@@ -5,6 +5,12 @@ use std::thread;
 use std::sync::{Arc, mpsc, Mutex};
 use std::time::Duration;
 
+pub trait Process{
+    fn exec(&self);
+}
+
+type Job = Box<dyn Process + Send + 'static>;
+
 pub struct Threadpool{
     workers:Vec<Worker>,
     sender:mpsc::Sender<Job>,
@@ -45,55 +51,6 @@ impl Drop for Threadpool {
     }
 }
 
-pub struct Work{
-    id:usize,
-}
-
-pub trait Process{
-    fn exec(&self);
-}
-
-type Job = Box<dyn Process + Send + 'static>;
-
-impl Work{
-    pub fn new(id:usize) -> Work{
-        Work{
-            id,
-        }
-    }
-}
-
-impl Process for Work{
-    fn exec(&self){
-        println!("---->{}", self.id);
-    }
-}
-
-#[derive(Deserialize, Debug)]
-pub struct Config {
-    pub max_num: u64,   //最大线程数
-    min_num: u64,   //最小线程数
-    idle_num: u64,  //空闲线程数
-    idle_time: u64, //空闲时长(秒)
-}
-
-pub fn parse_config() -> Config {
-    let file_path = "config/config.toml";
-    let mut file = match File::open(file_path) {
-        Ok(f) => f,
-        Err(e) => panic!("open file {} failed.\n err:{}\n", file_path, e),
-    };
-
-    let mut str_buffer = String::new();
-    match file.read_to_string(&mut str_buffer) {
-        Ok(s) => s,
-        Err(e) => panic!("read file failed: {}", e),
-    };
-
-    let config: Config = toml::from_str(&str_buffer).unwrap();
-    config
-}
-
 pub struct Worker{
     id:usize,
     thread:Option<thread::JoinHandle<()>>
@@ -117,4 +74,47 @@ impl Worker{
             thread:Some(thread),
         }
     }
+}
+
+pub struct Work{
+    id:usize,
+}
+
+impl Work{
+    pub fn new(id:usize) -> Work{
+        Work{
+            id,
+        }
+    }
+}
+
+impl Process for Work{
+    fn exec(&self){
+        println!("---->{}", self.id);
+    }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Config {
+    pub max_num: u64,   //最大线程数
+    // min_num: u64,   //最小线程数
+    // idle_num: u64,  //空闲线程数
+    // idle_time: u64, //空闲时长(秒)
+}
+
+pub fn parse_config() -> Config {
+    let file_path = "config/config.toml";
+    let mut file = match File::open(file_path) {
+        Ok(f) => f,
+        Err(e) => panic!("open file {} failed.\n err:{}\n", file_path, e),
+    };
+
+    let mut str_buffer = String::new();
+    match file.read_to_string(&mut str_buffer) {
+        Ok(s) => s,
+        Err(e) => panic!("read file failed: {}", e),
+    };
+
+    let config: Config = toml::from_str(&str_buffer).unwrap();
+    config
 }
