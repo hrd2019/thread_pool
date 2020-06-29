@@ -13,17 +13,4 @@ fn main() {
     let job = Box::new(Work::new(56));
 
     tp.sendTask(job);
-
-    // unsafe {
-    //     let h = build_thread(|| {
-    //         for i in 1..10 {
-    //             println!("hi number {} from the spawned thread!", i);
-    //             thread::sleep(Duration::from_millis(1));
-    //         }
-    //     });
-    //
-    //     // h.join().unwrap();
-    // }
-
-
 }

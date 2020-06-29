@@ -40,7 +40,7 @@ pub trait Process{
     fn exec(&self);
 }
 
-type Job = Box<dyn Process + Send + 'static>;
+type Job = Box<dyn Process + Send>;
 
 impl Work{
     pub fn new(id:usize) -> Work{
@@ -100,12 +100,4 @@ impl Worker{
             thread,
         }
     }
-}
-
-pub unsafe fn build_thread<F,T>(f:F) -> JoinHandle<T>
-    where
-        F: FnOnce() -> T,
-        F: Send + 'static,
-        T: Send + 'static,{
-    thread::spawn(f)
 }
